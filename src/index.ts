@@ -59,7 +59,7 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }
 
   /** Creates a new QueryState with explicit loading/success/failure states. */
-  static make<A, E, P>(args: {
+  static make<A, E, P = undefined>(args: {
     loading: { time?: DateTime.Utc | undefined; progress: P } | null
     success: { time?: DateTime.Utc | undefined; data: A } | null
     failure: { time?: DateTime.Utc | undefined; error: E } | null
@@ -104,14 +104,14 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
     })
 
   /** Creates a QueryState in success state. */
-  static succeeded = <A, E, P>(success: {
+  static succeeded = <A, E, P = undefined>(success: {
     time?: DateTime.Utc
     data: A
   }): QueryState<A, E, P> =>
     QueryState.make({ loading: null, success, failure: null })
 
   /** Creates a QueryState in failure state. */
-  static failed = <A, E, P>(failure: {
+  static failed = <A, E, P = undefined>(failure: {
     time?: DateTime.Utc
     error: E
   }): QueryState<A, E, P> =>
