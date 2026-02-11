@@ -23,8 +23,6 @@ module.exports = {
   rules: {
     // already checked by typescript
     '@typescript-eslint/no-redeclare': 'off',
-    // warn instead of error
-    '@typescript-eslint/no-unused-vars': 'warn',
     // allow namespace declaration for types
     '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
     // warn instead of error to prevent covering more specific errors
