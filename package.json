@@ -1,6 +1,6 @@
 {
   "name": "@matheuspuel/query-state",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "files": [
     "/dist",
@@ -16,8 +16,8 @@
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "build:watch": "tsc -b tsconfig.build.json --watch",
-    "lint": "eslint . --max-warnings 0 --config .eslintrc.production.js",
-    "lint:fix": "eslint . --fix --config .eslintrc.production.js",
+    "lint": "eslint . --max-warnings 0 --config .eslintrc.production.cjs",
+    "lint:fix": "eslint . --fix --config .eslintrc.production.cjs",
     "typecheck": "tsc",
     "test": "vitest"
   },
@@ -29,7 +29,8 @@
     "@effect/vitest": "^0.26.0",
     "@matheuspuel/query-state": "file:.",
     "@types/node": "^25.0.8",
-    "@typescript-eslint/parser": "^8.29.1",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^3.2.4",
     "cross-env": "^7.0.3",
     "eslint": "^8.57.1",

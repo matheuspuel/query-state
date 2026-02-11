@@ -12,9 +12,9 @@ export declare namespace QueryState {
 }
 
 export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
-  loading: { time?: DateTime.Utc; progress: P } | null
-  success: { time?: DateTime.Utc; data: A } | null
-  failure: { time?: DateTime.Utc; error: E } | null
+  loading: { time?: DateTime.Utc | undefined; progress: P } | null
+  success: { time?: DateTime.Utc | undefined; data: A } | null
+  failure: { time?: DateTime.Utc | undefined; error: E } | null
 
   get isLoading(): boolean {
     return !!this.loading
@@ -33,9 +33,9 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }
 
   constructor(args: {
-    loading: { time?: DateTime.Utc; progress: P } | null
-    success: { time?: DateTime.Utc; data: A } | null
-    failure: { time?: DateTime.Utc; error: E } | null
+    loading: { time?: DateTime.Utc | undefined; progress: P } | null
+    success: { time?: DateTime.Utc | undefined; data: A } | null
+    failure: { time?: DateTime.Utc | undefined; error: E } | null
   }) {
     super()
     this.loading = args.loading
@@ -44,9 +44,9 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }
 
   static make<A, E, P>(args: {
-    loading: { time?: DateTime.Utc; progress: P } | null
-    success: { time?: DateTime.Utc; data: A } | null
-    failure: { time?: DateTime.Utc; error: E } | null
+    loading: { time?: DateTime.Utc | undefined; progress: P } | null
+    success: { time?: DateTime.Utc | undefined; data: A } | null
+    failure: { time?: DateTime.Utc | undefined; error: E } | null
   }) {
     return new QueryState(args)
   }
@@ -56,8 +56,11 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
     success: null,
     failure: null,
   })
-  static initial = <A = never, E = never, P = never>(): QueryState<A, E, P> =>
-    QueryState.initial_
+  static initial = <A = never, E = never, P = undefined>(): QueryState<
+    A,
+    E,
+    P
+  > => QueryState.initial_
 
   static started: {
     <P, A = never, E = never>(loading: {
@@ -93,15 +96,46 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }): QueryState<A, E, P> =>
     QueryState.make({ loading: null, success: null, failure })
 
-  static start =
-    <A, E, P, P1 extends P>(loading: { time?: DateTime.Utc; progress: P1 }) =>
+  static start: {
+    <A, E>(loading?: {
+      time?: DateTime.Utc | undefined
+      progress?: undefined
+    }): (self: QueryState<A, E, undefined>) => QueryState<A, E, undefined>
+    <A, E, P, P1 extends P>(loading: {
+      time?: DateTime.Utc | undefined
+      progress: P1
+    }): (self: QueryState<A, E, P>) => QueryState<A, E, P>
+  } =
+    <A, E, P, P1 extends P>(loading?: {
+      time?: DateTime.Utc | undefined
+      progress?: P1
+    }) =>
     (self: QueryState<A, E, P>): QueryState<A, E, P> =>
-      QueryState.make({ ...self, loading })
-  start<P1 extends P>(loading: {
-    time?: DateTime.Utc
-    progress: P1
-  }): QueryState<A, E, P> {
-    return this.pipe(QueryState.start(loading))
+      QueryState.make({
+        ...self,
+        loading: { time: loading?.time, progress: loading?.progress as P1 },
+      })
+  start<P1 extends P>(
+    ...[loading]: P extends undefined
+      ? [
+          loading?: {
+            time?: DateTime.Utc | undefined
+            progress?: undefined
+          },
+        ]
+      : [
+          loading: {
+            time?: DateTime.Utc | undefined
+            progress: P1
+          },
+        ]
+  ): QueryState<A, E, P> {
+    return this.pipe(
+      QueryState.start({
+        time: loading?.time,
+        progress: loading?.progress as P1,
+      }),
+    )
   }
 
   static succeed =
@@ -196,26 +230,28 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }
 
   static trackEffect: {
-    <A, E, R, A1 extends A, E1 extends E, P>(
+    <A, E, R, A1 extends A, E1 extends E, P, I = void>(
       updateQueryState: (
         f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
       ) => void,
       effect:
         | Effect.Effect<A1, E1, R>
         | ((
+            input: I,
             updateQueryState: (
               f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
             ) => void,
           ) => Effect.Effect<A1, E1, R>),
       info: { initialProgress: P },
-    ): Effect.Effect<A1, E1, R>
-    <A, E, R, A1 extends A, E1 extends E>(
+    ): (input: I) => Effect.Effect<A1, E1, R>
+    <A, E, R, A1 extends A, E1 extends E, I = void>(
       updateQueryState: (
         f: (state: QueryState<A, E, undefined>) => QueryState<A, E, undefined>,
       ) => void,
       effect:
         | Effect.Effect<A1, E1, R>
         | ((
+            input: I,
             updateQueryState: (
               f: (
                 state: QueryState<A, E, undefined>,
@@ -223,29 +259,34 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
             ) => void,
           ) => Effect.Effect<A1, E1, R>),
       info?: { initialProgress?: undefined },
-    ): Effect.Effect<A1, E1, R>
-  } = <A, E, R, A1 extends A, E1 extends E, P>(
-    updateQueryState: (
-      f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
-    ) => void,
-    effect:
-      | Effect.Effect<A1, E1, R>
-      | ((
-          updateQueryState: (
-            f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
-          ) => void,
-        ) => Effect.Effect<A1, E1, R>),
-    info?: { initialProgress?: P },
-  ): Effect.Effect<A1, E1, R> =>
-    Effect.gen(function* () {
-      const now = yield* DateTime.now
-      updateQueryState(
-        QueryState.start({ time: now, progress: info?.initialProgress as P }),
-      )
-      const result = yield* (
-        typeof effect === 'function' ? effect(updateQueryState) : effect
-      ).pipe(Effect.either)
-      updateQueryState(QueryState.applyEither(result, { time: now }))
-      return yield* result
-    })
+    ): (input: I) => Effect.Effect<A1, E1, R>
+  } =
+    <A, E, R, A1 extends A, E1 extends E, P, I = void>(
+      updateQueryState: (
+        f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
+      ) => void,
+      effect:
+        | Effect.Effect<A1, E1, R>
+        | ((
+            input: I,
+            updateQueryState: (
+              f: (state: QueryState<A, E, P>) => QueryState<A, E, P>,
+            ) => void,
+          ) => Effect.Effect<A1, E1, R>),
+      info?: { initialProgress?: P },
+    ) =>
+    (input: I): Effect.Effect<A1, E1, R> =>
+      Effect.gen(function* () {
+        const now = yield* DateTime.now
+        updateQueryState(
+          QueryState.start({ time: now, progress: info?.initialProgress as P }),
+        )
+        const result = yield* (
+          typeof effect === 'function'
+            ? effect(input, updateQueryState)
+            : effect
+        ).pipe(Effect.either)
+        updateQueryState(QueryState.applyEither(result, { time: now }))
+        return yield* result
+      })
 }

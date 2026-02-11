@@ -17,8 +17,8 @@ module.exports = {
     '/dist/*',
     '/experiments/*',
     '/node_modules/*',
-    '.eslintrc.js',
-    '.eslintrc.production.js',
+    '.eslintrc.cjs',
+    '.eslintrc.production.cjs',
   ],
   rules: {
     // already checked by typescript
@@ -30,5 +30,14 @@ module.exports = {
     // warn instead of error to prevent covering more specific errors
     '@typescript-eslint/no-unsafe-return': 'warn',
     '@typescript-eslint/no-unsafe-call': 'warn',
+    // allow explicit unused variables
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
   },
 }
