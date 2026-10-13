@@ -1,5 +1,7 @@
+// oxlint-disable unicorn/consistent-function-scoping
+
 import { QueryState } from '@matheuspuel/query-state'
-import { DateTime, Effect, Either } from 'effect'
+import { DateTime, Effect, Result } from 'effect'
 import { describe, expect, it } from 'vitest'
 
 describe('QueryState', () => {
@@ -96,7 +98,7 @@ describe('QueryState', () => {
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const state = QueryState.started({ time, progress: 0.5 })
       expect(state.loading?.time).toBe(time)
     })
@@ -118,7 +120,7 @@ describe('QueryState', () => {
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const state = QueryState.succeeded({ data: 42, time })
       expect(state.success?.time).toBe(time)
     })
@@ -133,7 +135,7 @@ describe('QueryState', () => {
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const state = QueryState.failed({ error: 'Error', time })
       expect(state.failure?.time).toBe(time)
     })
@@ -198,7 +200,7 @@ describe('QueryState', () => {
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const initial = QueryState.started<number>()
       const updated = initial.succeed({ data: 42, time })
       expect(updated.success?.time).toBe(time)
@@ -226,7 +228,7 @@ describe('QueryState', () => {
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const initial = QueryState.succeeded({ data: 42 })
       const updated = initial.fail({ error: 'Error', time })
       expect(updated.failure?.time).toBe(time)
@@ -260,43 +262,43 @@ describe('QueryState', () => {
     })
   })
 
-  describe('applyEither (static and instance)', () => {
-    it('applies Right result to set success', () => {
+  describe('applyResult (static and instance)', () => {
+    it('applies result success to QueryState success', () => {
       const initial = QueryState.started()
-      const either = Either.right(42)
-      const updated = QueryState.applyEither(either)(initial)
+      const result = Result.succeed(42)
+      const updated = QueryState.applyResult(result)(initial)
       expect(updated.data).toBe(42)
       expect(updated.isLoading).toBe(false)
     })
 
-    it('applies Left result to set failure', () => {
+    it('applies result failure to QueryState failure', () => {
       const initial = QueryState.started()
-      const either = Either.left('NetworkError')
-      const updated = QueryState.applyEither(either)(initial)
+      const result = Result.fail('NetworkError')
+      const updated = QueryState.applyResult(result)(initial)
       expect(updated.error).toBe('NetworkError')
       expect(updated.isLoading).toBe(false)
     })
 
     it('preserves success when applying a new error', () => {
       const initial = QueryState.succeeded({ data: 42 })
-      const either = Either.left('Error')
-      const updated = QueryState.applyEither(either)(initial)
+      const result = Result.fail('Error')
+      const updated = QueryState.applyResult(result)(initial)
       expect(updated.error).toBe('Error')
       expect(updated.data).toBe(42)
     })
 
     it('works as instance method', () => {
       const initial = QueryState.started<number>()
-      const either = Either.right(42)
-      const updated = initial.applyEither(either)
+      const result = Result.succeed(42)
+      const updated = initial.applyResult(result)
       expect(updated.data).toBe(42)
     })
 
     it('can include a time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const initial = QueryState.started<number>()
-      const either = Either.right(42)
-      const updated = initial.applyEither(either, { time })
+      const result = Result.succeed(42)
+      const updated = initial.applyResult(result, { time })
       expect(updated.success?.time).toBe(time)
     })
   })
@@ -344,7 +346,7 @@ describe('QueryState', () => {
     })
 
     it('preserves loading time', () => {
-      const time = DateTime.unsafeMake('2026-01-01T00:00:00Z')
+      const time = DateTime.makeUnsafe('2026-01-01T00:00:00Z')
       const initial = QueryState.started({ time, progress: 0.5 })
       const updated = QueryState.makeProgress(0.8)(initial)
       expect(updated.loading?.time).toBe(time)
@@ -392,11 +394,9 @@ describe('QueryState', () => {
 
   describe('trackEffect', () => {
     it('updates state on effect start and success', async () => {
-      const history: Array<QueryState<number, string, undefined>> = []
+      const history: Array<QueryState<number, string>> = []
       const updateQueryState = (
-        f: (
-          state: QueryState<number, string, undefined>,
-        ) => QueryState<number, string, undefined>,
+        f: (state: QueryState<number, string>) => QueryState<number, string>,
       ) => {
         const newState = f(history[history.length - 1] || QueryState.initial())
         history.push(newState)
@@ -416,11 +416,9 @@ describe('QueryState', () => {
     })
 
     it('updates state on effect start and failure', async () => {
-      const history: Array<QueryState<number, string, undefined>> = []
+      const history: Array<QueryState<number, string>> = []
       const updateQueryState = (
-        f: (
-          state: QueryState<number, string, undefined>,
-        ) => QueryState<number, string, undefined>,
+        f: (state: QueryState<number, string>) => QueryState<number, string>,
       ) => {
         const newState = f(history[history.length - 1] || QueryState.initial())
         history.push(newState)
@@ -515,31 +513,31 @@ describe('QueryState', () => {
         QueryState.make({ loading: null, failure: null, success: null }),
       )
       expect(
-        QueryState.succeeded({ data: 1, time: DateTime.unsafeMake(0) }),
+        QueryState.succeeded({ data: 1, time: DateTime.makeUnsafe(0) }),
       ).toStrictEqual(
-        QueryState.succeeded({ data: 1, time: DateTime.unsafeMake(0) }),
+        QueryState.succeeded({ data: 1, time: DateTime.makeUnsafe(0) }),
       )
       expect(
-        QueryState.succeeded({ data: 1, time: DateTime.unsafeMake(0) }),
+        QueryState.succeeded({ data: 1, time: DateTime.makeUnsafe(0) }),
       ).not.toStrictEqual(
-        QueryState.succeeded({ data: 2, time: DateTime.unsafeMake(0) }),
+        QueryState.succeeded({ data: 2, time: DateTime.makeUnsafe(0) }),
       )
       expect(
-        QueryState.succeeded({ data: 1, time: DateTime.unsafeMake(0) }),
+        QueryState.succeeded({ data: 1, time: DateTime.makeUnsafe(0) }),
       ).not.toStrictEqual(
-        QueryState.succeeded({ data: 1, time: DateTime.unsafeMake(1) }),
+        QueryState.succeeded({ data: 1, time: DateTime.makeUnsafe(1) }),
       )
       expect(
         QueryState.make({
           loading: { progress: undefined },
-          failure: { error: 'e', time: DateTime.unsafeMake(0) },
-          success: { data: 1, time: DateTime.unsafeMake(0) },
+          failure: { error: 'e', time: DateTime.makeUnsafe(0) },
+          success: { data: 1, time: DateTime.makeUnsafe(0) },
         }),
       ).toStrictEqual(
         QueryState.make({
           loading: { progress: undefined },
-          failure: { error: 'e', time: DateTime.unsafeMake(0) },
-          success: { data: 1, time: DateTime.unsafeMake(0) },
+          failure: { error: 'e', time: DateTime.makeUnsafe(0) },
+          success: { data: 1, time: DateTime.makeUnsafe(0) },
         }),
       )
     })

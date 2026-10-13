@@ -1,4 +1,4 @@
-import { DateTime, Effect, Either, Pipeable } from 'effect'
+import { DateTime, Effect, Pipeable, Result } from 'effect'
 
 /** Type helpers for extracting parts of a QueryState instance. */
 export declare namespace QueryState {
@@ -18,7 +18,7 @@ export declare namespace QueryState {
 /**
  * Immutable query state container with loading, success, and failure states.
  */
-export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
+export class QueryState<A, E, P = undefined> extends Pipeable.Class {
   /** Current loading state. */
   loading: { time?: DateTime.Utc | undefined; progress: P } | null
   /** Last still valid, successful result. */
@@ -89,7 +89,7 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
     <A = never, E = never>(loading?: {
       time?: DateTime.Utc
       progress?: undefined
-    }): QueryState<A, E, undefined>
+    }): QueryState<A, E>
   } = <P, A = never, E = never>(loading?: {
     time?: DateTime.Utc
     progress?: P
@@ -122,7 +122,7 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
     <A, E>(loading?: {
       time?: DateTime.Utc | undefined
       progress?: undefined
-    }): (self: QueryState<A, E, undefined>) => QueryState<A, E, undefined>
+    }): (self: QueryState<A, E>) => QueryState<A, E>
     /** Sets loading state. Success and failure are preserved. */
     <A, E, P, P1 extends P>(loading: {
       time?: DateTime.Utc | undefined
@@ -206,28 +206,28 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
   }
 
   /**
-   * Applies an Either result to the state, storing success or failure and removing loading state.
+   * Applies a Result to the state, storing success or failure and removing loading state.
    */
-  static applyEither =
+  static applyResult =
     <A, A1 extends A, E, E1 extends E, P>(
-      either: Either.Either<A1, E1>,
+      result: Result.Result<A1, E1>,
       info?: { time?: DateTime.Utc },
     ) =>
     (self: QueryState<A, E, P>): QueryState<A, E, P> =>
-      Either.match(either, {
-        onRight: _ =>
+      Result.match(result, {
+        onSuccess: _ =>
           self.succeed({ ...(info?.time ? { time: info.time } : {}), data: _ }),
-        onLeft: _ =>
+        onFailure: _ =>
           self.fail({ ...(info?.time ? { time: info.time } : {}), error: _ }),
       })
   /**
-   * Applies an Either result to the state, storing success or failure and removing loading state.
+   * Applies a Result to the state, storing success or failure and removing loading state.
    */
-  applyEither<A1 extends A, E1 extends E>(
-    either: Either.Either<A1, E1>,
+  applyResult<A1 extends A, E1 extends E>(
+    result: Result.Result<A1, E1>,
     info?: { time?: DateTime.Utc },
   ): QueryState<A, E, P> {
-    return this.pipe(QueryState.applyEither(either, info))
+    return this.pipe(QueryState.applyResult(result, info))
   }
 
   /** Transforms success data when present. */
@@ -289,16 +289,14 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
     /** Wraps an Effect to update QueryState on start and completion. */
     <A, E, R, A1 extends A, E1 extends E, I = void>(
       updateQueryState: (
-        f: (state: QueryState<A, E, undefined>) => QueryState<A, E, undefined>,
+        f: (state: QueryState<A, E>) => QueryState<A, E>,
       ) => void,
       effect:
         | Effect.Effect<A1, E1, R>
         | ((
             input: I,
             updateQueryState: (
-              f: (
-                state: QueryState<A, E, undefined>,
-              ) => QueryState<A, E, undefined>,
+              f: (state: QueryState<A, E>) => QueryState<A, E>,
             ) => void,
           ) => Effect.Effect<A1, E1, R>),
       info?: { initialProgress?: undefined },
@@ -328,8 +326,8 @@ export class QueryState<A, E, P = undefined> extends Pipeable.Class() {
           typeof effect === 'function'
             ? effect(input, updateQueryState)
             : effect
-        ).pipe(Effect.either)
-        updateQueryState(QueryState.applyEither(result, { time: now }))
-        return yield* result
+        ).pipe(Effect.result)
+        updateQueryState(QueryState.applyResult(result, { time: now }))
+        return yield* Effect.fromResult(result)
       })
 }

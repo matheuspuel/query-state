@@ -146,7 +146,7 @@ console.log(queryState)
 
 // Start and set time
 queryState = queryState.start({
-  time: DateTime.unsafeMake('2026-01-01T00:00:00Z'),
+  time: DateTime.makeUnsafe('2026-01-01T00:00:00Z'),
 })
 console.log(queryState)
 // QueryState {
@@ -158,7 +158,7 @@ console.log(queryState)
 // Succeed and set the result time
 queryState = queryState.succeed({
   data: 10,
-  time: DateTime.unsafeMake('2026-01-01T00:00:00Z'),
+  time: DateTime.makeUnsafe('2026-01-01T00:00:00Z'),
 })
 console.log(queryState)
 // QueryState {
@@ -170,7 +170,7 @@ console.log(queryState)
 // Fail and set the failure time
 queryState = queryState.fail({
   error: new Error('Something went wrong'),
-  time: DateTime.unsafeMake('2026-01-01T00:00:00Z'),
+  time: DateTime.makeUnsafe('2026-01-01T00:00:00Z'),
 })
 console.log(queryState)
 // QueryState {
